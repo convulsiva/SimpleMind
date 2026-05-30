@@ -63,6 +63,7 @@ Set your Telegram token in `.env`:
 BOT_TOKEN=your_telegram_bot_token_here
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-4o-mini
+LOG_LEVEL=INFO
 ```
 
 Run the bot:

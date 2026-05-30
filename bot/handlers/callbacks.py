@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import F, Router
 from aiogram.types import CallbackQuery, Message
 
@@ -12,6 +14,7 @@ from bot.services.user_context import get_user_term
 
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 
 @router.callback_query(F.data.startswith(MODE_PREFIX))
@@ -35,14 +38,22 @@ async def _answer_with_explanation(
     term = get_user_term(user_id)
 
     if not term:
+        logger.info("Callback without saved term from user_id=%s", user_id)
         await callback.answer("Сначала отправь слово или тему.", show_alert=True)
         return
 
+    logger.info(
+        "Received explanation callback from user_id=%s mode=%s action=%s",
+        user_id,
+        mode,
+        action,
+    )
     await callback.answer("Готовлю ответ...")
 
     try:
         explanation = await explain_term(term, get_settings(), mode=mode, action=action)
     except AIServiceError as error:
+        logger.warning("AI callback explanation failed for user_id=%s: %s", user_id, error)
         await _send_or_edit(callback.message, str(error))
         return
 
