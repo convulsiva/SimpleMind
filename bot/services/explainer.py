@@ -1,6 +1,7 @@
 import logging
+from typing import Any
 
-from openai import APIError, AsyncOpenAI
+import httpx
 
 from bot.config import Settings
 
@@ -33,6 +34,8 @@ ACTION_INSTRUCTIONS = {
     ),
 }
 
+FALLBACK_GEMINI_MODEL = "gemini-2.0-flash-lite"
+
 
 class AIServiceError(Exception):
     """Raised when the explanation service cannot return a useful answer."""
@@ -44,49 +47,171 @@ async def explain_term(
     mode: ExplanationMode = "beginner",
     action: ExplanationAction | None = None,
 ) -> str:
-    if not settings.openai_api_key:
+    if not settings.gemini_api_key:
         raise AIServiceError(
-            "AI API пока не настроен. Добавь OPENAI_API_KEY в .env и перезапусти бота."
+            "Gemini API пока не настроен. Добавь GEMINI_API_KEY в .env и перезапусти бота."
         )
 
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
     instruction = _build_instruction(mode, action)
-
-    try:
-        response = await client.chat.completions.create(
-            model=settings.openai_model,
-            messages=[
+    payload = {
+        "systemInstruction": {
+            "parts": [
                 {
-                    "role": "system",
-                    "content": (
+                    "text": (
                         "Ты объясняешь сложные слова, термины и темы простым языком. "
                         "Отвечай по-русски, дружелюбно и понятно для новичка. "
                         "Не используй длинные вступления."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Объясни простыми словами тему: {term}\n\n"
-                        f"Режим: {instruction}\n\n"
-                        "Сохраняй ответ понятным, структурированным и полезным."
-                    ),
-                },
-            ],
-            temperature=0.4,
+                    )
+                }
+            ]
+        },
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "text": (
+                            f"Объясни простыми словами тему: {term}\n\n"
+                            f"Режим: {instruction}\n\n"
+                            "Сохраняй ответ понятным, структурированным и полезным."
+                        )
+                    }
+                ],
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.4,
+        },
+    }
+
+    try:
+        response_data = await _send_gemini_request(
+            settings=settings,
+            payload=payload,
+            model=settings.gemini_model,
         )
-    except APIError as error:
-        logger.exception("OpenAI API request failed: %s", error.__class__.__name__)
+    except httpx.TimeoutException as error:
+        logger.warning("Gemini API request timed out")
+        raise AIServiceError("Gemini не успел ответить. Попробуй еще раз чуть позже.") from error
+    except httpx.HTTPStatusError as error:
+        if error.response.status_code == 429:
+            if settings.gemini_model != FALLBACK_GEMINI_MODEL:
+                logger.warning(
+                    "Gemini API rate limit exceeded for model=%s, trying fallback=%s",
+                    settings.gemini_model,
+                    FALLBACK_GEMINI_MODEL,
+                )
+                try:
+                    response_data = await _send_gemini_request(
+                        settings=settings,
+                        payload=payload,
+                        model=FALLBACK_GEMINI_MODEL,
+                    )
+                except httpx.HTTPStatusError:
+                    logger.warning("Gemini fallback model also failed with HTTP error")
+                else:
+                    return _finish_explanation(response_data)
+
+            retry_after = error.response.headers.get("Retry-After")
+            wait_text = f" Подожди примерно {retry_after} сек. и попробуй снова." if retry_after else ""
+            api_message = _extract_error_message(error.response)
+            detail_text = f" Детали API: {api_message}" if api_message else ""
+            logger.warning("Gemini API rate limit exceeded: %s", api_message or "no details")
+            raise AIServiceError(
+                "Gemini ограничил частоту запросов или бесплатную квоту."
+                f"{wait_text}{detail_text} Попробуй позже или проверь квоты проекта в Google AI Studio."
+            ) from error
+
+        if error.response.status_code in {401, 403}:
+            logger.warning("Gemini API authentication or permission error")
+            raise AIServiceError(
+                "Gemini API не принял ключ или доступ запрещен. "
+                "Проверь GEMINI_API_KEY и доступность модели для аккаунта."
+            ) from error
+
+        if error.response.status_code == 404:
+            logger.warning("Gemini model was not found")
+            raise AIServiceError(
+                "Gemini не нашел выбранную модель. Проверь значение GEMINI_MODEL в .env."
+            ) from error
+
+        logger.exception("Gemini API returned status %s", error.response.status_code)
         raise AIServiceError(
-            "Не получилось получить ответ от AI API. Попробуй еще раз чуть позже."
+            "Не получилось получить ответ от Gemini. Попробуй еще раз чуть позже."
+        ) from error
+    except httpx.RequestError as error:
+        logger.exception("Gemini API request failed: %s", error.__class__.__name__)
+        raise AIServiceError(
+            "Не получилось подключиться к Gemini API. Попробуй еще раз чуть позже."
         ) from error
 
-    explanation = response.choices[0].message.content
+    return _finish_explanation(response_data)
+
+
+async def _send_gemini_request(
+    settings: Settings,
+    payload: dict[str, Any],
+    model: str,
+) -> dict[str, Any]:
+    base_url = settings.gemini_base_url.rstrip("/")
+    url = f"{base_url}/models/{model}:generateContent"
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": settings.gemini_api_key,
+    }
+
+    async with httpx.AsyncClient(timeout=settings.gemini_timeout) as client:
+        response = await client.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        return response.json()
+
+
+def _finish_explanation(response_data: dict[str, Any]) -> str:
+    explanation = _extract_message_content(response_data)
     if not explanation:
-        logger.warning("OpenAI API returned an empty explanation")
-        raise AIServiceError("AI API вернул пустой ответ. Попробуй переформулировать запрос.")
+        logger.warning("Gemini API returned an empty explanation")
+        raise AIServiceError("Gemini вернул пустой ответ. Попробуй переформулировать запрос.")
 
     return explanation.strip()
+
+
+def _extract_message_content(response_data: dict[str, Any]) -> str | None:
+    candidates = response_data.get("candidates")
+    if not candidates:
+        return None
+
+    first_candidate = candidates[0]
+    if not isinstance(first_candidate, dict):
+        return None
+
+    content = first_candidate.get("content")
+    if not isinstance(content, dict):
+        return None
+
+    parts = content.get("parts")
+    if not parts:
+        return None
+
+    text_parts = [
+        part.get("text")
+        for part in parts
+        if isinstance(part, dict) and isinstance(part.get("text"), str)
+    ]
+    return "\n".join(text_parts) if text_parts else None
+
+
+def _extract_error_message(response: httpx.Response) -> str | None:
+    try:
+        error_data = response.json()
+    except ValueError:
+        return None
+
+    error = error_data.get("error")
+    if not isinstance(error, dict):
+        return None
+
+    message = error.get("message")
+    return message if isinstance(message, str) else None
 
 
 def _build_instruction(
