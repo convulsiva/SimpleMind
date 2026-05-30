@@ -306,4 +306,5 @@ GitHub Actions запускает эту проверку для Pull Request в
 * Проверь, что OpenRouter API key активен.
 * Проверь, что модель из `OPENROUTER_MODEL` доступна в OpenRouter.
 * Проверь лимиты выбранной бесплатной модели.
+* Если OpenRouter возвращает `402 Payment Required`, проверь дневной free-лимит, credit limit API key и баланс аккаунта.
 * Попробуй повторить запрос позже, если API временно недоступен.

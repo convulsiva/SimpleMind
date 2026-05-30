@@ -83,6 +83,14 @@ async def explain_term(
             "Qwen не успел ответить. Попробуй еще раз чуть позже."
         ) from error
     except httpx.HTTPStatusError as error:
+        if error.response.status_code == 402:
+            logger.warning("OpenRouter API requires payment or free quota is exhausted")
+            raise AIServiceError(
+                "OpenRouter вернул 402 Payment Required. "
+                "Проверь, не закончился ли бесплатный лимит, не стоит ли credit limit "
+                "на API key и доступна ли выбранная free-модель для твоего аккаунта."
+            ) from error
+
         logger.exception(
             "OpenRouter API returned status %s",
             error.response.status_code,
