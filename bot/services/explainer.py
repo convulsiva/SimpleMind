@@ -91,6 +91,15 @@ async def explain_term(
                 "на API key и доступна ли выбранная free-модель для твоего аккаунта."
             ) from error
 
+        if error.response.status_code == 429:
+            retry_after = error.response.headers.get("Retry-After")
+            wait_text = f" Подожди примерно {retry_after} сек. и попробуй снова." if retry_after else ""
+            logger.warning("OpenRouter API rate limit exceeded")
+            raise AIServiceError(
+                "OpenRouter ограничил частоту запросов или free-лимит модели."
+                f"{wait_text} Можно также попробовать другую Qwen free-модель позже."
+            ) from error
+
         logger.exception(
             "OpenRouter API returned status %s",
             error.response.status_code,
