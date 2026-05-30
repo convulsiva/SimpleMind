@@ -2,7 +2,9 @@ from aiogram import F, Router
 from aiogram.types import Message
 
 from bot.config import get_settings
+from bot.keyboards.explanation import explanation_actions_keyboard
 from bot.services.explainer import AIServiceError, explain_term
+from bot.services.user_context import save_user_term
 
 
 router = Router()
@@ -16,6 +18,9 @@ async def handle_text(message: Message) -> None:
         await message.answer("Отправь слово или тему, которую нужно объяснить.")
         return
 
+    user_id = message.from_user.id if message.from_user else message.chat.id
+    save_user_term(user_id, term)
+
     processing_message = await message.answer("Думаю над объяснением...")
 
     try:
@@ -25,4 +30,4 @@ async def handle_text(message: Message) -> None:
         return
 
     await processing_message.delete()
-    await message.answer(explanation)
+    await message.answer(explanation, reply_markup=explanation_actions_keyboard())
