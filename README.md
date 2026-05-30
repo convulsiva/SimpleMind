@@ -71,6 +71,42 @@ Run the bot:
 python -m bot.main
 ```
 
+## Docker Setup
+
+Create `.env` from `.env.example` and set real tokens:
+
+```bash
+copy .env.example .env
+```
+
+Build and start the bot:
+
+```bash
+docker compose up -d --build
+```
+
+View logs:
+
+```bash
+docker compose logs -f bot
+```
+
+Stop the bot:
+
+```bash
+docker compose down
+```
+
+## VPS Deployment
+
+On a server, install Docker and Docker Compose, clone the repository, create `.env`, then run:
+
+```bash
+docker compose up -d --build
+```
+
+The bot uses long polling, so no public webhook URL is required.
+
 ## Example Requests
 
 * `TCP/IP`
@@ -82,6 +118,4 @@ python -m bot.main
 
 ## Roadmap
 
-* Add Docker deployment
 * Add structured logging
-* Add GitHub workflow
