@@ -114,10 +114,12 @@ async def explain_term(
 
             retry_after = error.response.headers.get("Retry-After")
             wait_text = f" Подожди примерно {retry_after} сек. и попробуй снова." if retry_after else ""
-            logger.warning("Gemini API rate limit exceeded")
+            api_message = _extract_error_message(error.response)
+            detail_text = f" Детали API: {api_message}" if api_message else ""
+            logger.warning("Gemini API rate limit exceeded: %s", api_message or "no details")
             raise AIServiceError(
                 "Gemini ограничил частоту запросов или бесплатную квоту."
-                f"{wait_text} Попробуй позже или выбери другую Gemini-модель."
+                f"{wait_text}{detail_text} Попробуй позже или проверь квоты проекта в Google AI Studio."
             ) from error
 
         if error.response.status_code in {401, 403}:
@@ -196,6 +198,20 @@ def _extract_message_content(response_data: dict[str, Any]) -> str | None:
         if isinstance(part, dict) and isinstance(part.get("text"), str)
     ]
     return "\n".join(text_parts) if text_parts else None
+
+
+def _extract_error_message(response: httpx.Response) -> str | None:
+    try:
+        error_data = response.json()
+    except ValueError:
+        return None
+
+    error = error_data.get("error")
+    if not isinstance(error, dict):
+        return None
+
+    message = error.get("message")
+    return message if isinstance(message, str) else None
 
 
 def _build_instruction(
