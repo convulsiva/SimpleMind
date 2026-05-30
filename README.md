@@ -1,4 +1,4 @@
-# ExplainIt
+# SimpleMind
 
 ExplainIt is a Telegram bot powered by AI that helps users understand complex terms, concepts, and topics in simple language.
 
