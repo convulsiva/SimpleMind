@@ -2,14 +2,14 @@
 
 SimpleMind is a Telegram bot that explains unfamiliar words, terms, and topics in simple language.
 
-At the first stage, the bot runs on `aiogram 3` and returns a mock explanation. AI integration, explanation modes, inline buttons, Docker deployment, and advanced logging will be added in later stages.
+The bot runs on `aiogram 3` and uses the OpenAI API to generate beginner-friendly explanations. Explanation modes, inline buttons, Docker deployment, and advanced logging will be added in later stages.
 
 ## Features
 
 * `/start` command with a short bot introduction
 * `/help` command with example requests
 * Plain text message handling
-* Temporary mock response instead of a real AI API call
+* AI-generated explanations through OpenAI API
 * Environment-based configuration through `.env`
 
 ## Project Structure
@@ -56,6 +56,8 @@ Set your Telegram token in `.env`:
 
 ```env
 BOT_TOKEN=your_telegram_bot_token_here
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4o-mini
 ```
 
 Run the bot:
