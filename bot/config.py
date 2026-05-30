@@ -5,8 +5,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     bot_token: str
-    openai_api_key: str | None = None
-    openai_model: str = "gpt-4o-mini"
+    openrouter_api_key: str | None = None
+    openrouter_model: str = "qwen/qwen3-8b:free"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_timeout: float = 30.0
     log_level: str = "INFO"
 
     model_config = SettingsConfigDict(

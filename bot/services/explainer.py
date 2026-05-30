@@ -1,6 +1,7 @@
 import logging
+from typing import Any
 
-from openai import APIError, AsyncOpenAI
+import httpx
 
 from bot.config import Settings
 
@@ -44,49 +45,97 @@ async def explain_term(
     mode: ExplanationMode = "beginner",
     action: ExplanationAction | None = None,
 ) -> str:
-    if not settings.openai_api_key:
+    if not settings.openrouter_api_key:
         raise AIServiceError(
-            "AI API пока не настроен. Добавь OPENAI_API_KEY в .env и перезапусти бота."
+            "Qwen через OpenRouter пока не настроен. "
+            "Добавь OPENROUTER_API_KEY в .env и перезапусти бота."
         )
 
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
     instruction = _build_instruction(mode, action)
+    payload = {
+        "model": settings.openrouter_model,
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "Ты объясняешь сложные слова, термины и темы простым языком. "
+                    "Отвечай по-русски, дружелюбно и понятно для новичка. "
+                    "Не используй длинные вступления."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Объясни простыми словами тему: {term}\n\n"
+                    f"Режим: {instruction}\n\n"
+                    "Сохраняй ответ понятным, структурированным и полезным."
+                ),
+            },
+        ],
+        "temperature": 0.4,
+    }
 
     try:
-        response = await client.chat.completions.create(
-            model=settings.openai_model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "Ты объясняешь сложные слова, термины и темы простым языком. "
-                        "Отвечай по-русски, дружелюбно и понятно для новичка. "
-                        "Не используй длинные вступления."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Объясни простыми словами тему: {term}\n\n"
-                        f"Режим: {instruction}\n\n"
-                        "Сохраняй ответ понятным, структурированным и полезным."
-                    ),
-                },
-            ],
-            temperature=0.4,
-        )
-    except APIError as error:
-        logger.exception("OpenAI API request failed: %s", error.__class__.__name__)
+        response_data = await _send_openrouter_request(settings, payload)
+    except httpx.TimeoutException as error:
+        logger.warning("OpenRouter request timed out")
         raise AIServiceError(
-            "Не получилось получить ответ от AI API. Попробуй еще раз чуть позже."
+            "Qwen не успел ответить. Попробуй еще раз чуть позже."
+        ) from error
+    except httpx.HTTPStatusError as error:
+        logger.exception(
+            "OpenRouter API returned status %s",
+            error.response.status_code,
+        )
+        raise AIServiceError(
+            "Не получилось получить ответ от Qwen через OpenRouter. "
+            "Проверь API key или попробуй позже."
+        ) from error
+    except httpx.RequestError as error:
+        logger.exception("OpenRouter API request failed: %s", error.__class__.__name__)
+        raise AIServiceError(
+            "Не получилось подключиться к OpenRouter. Попробуй еще раз чуть позже."
         ) from error
 
-    explanation = response.choices[0].message.content
+    explanation = _extract_message_content(response_data)
     if not explanation:
-        logger.warning("OpenAI API returned an empty explanation")
-        raise AIServiceError("AI API вернул пустой ответ. Попробуй переформулировать запрос.")
+        logger.warning("OpenRouter API returned an empty explanation")
+        raise AIServiceError("Qwen вернул пустой ответ. Попробуй переформулировать запрос.")
 
     return explanation.strip()
+
+
+async def _send_openrouter_request(
+    settings: Settings,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    url = f"{settings.openrouter_base_url.rstrip('/')}/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {settings.openrouter_api_key}",
+        "Content-Type": "application/json",
+    }
+
+    async with httpx.AsyncClient(timeout=settings.openrouter_timeout) as client:
+        response = await client.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        return response.json()
+
+
+def _extract_message_content(response_data: dict[str, Any]) -> str | None:
+    choices = response_data.get("choices")
+    if not choices:
+        return None
+
+    first_choice = choices[0]
+    if not isinstance(first_choice, dict):
+        return None
+
+    message = first_choice.get("message")
+    if not isinstance(message, dict):
+        return None
+
+    content = message.get("content")
+    return content if isinstance(content, str) else None
 
 
 def _build_instruction(

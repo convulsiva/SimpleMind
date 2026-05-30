@@ -2,14 +2,14 @@
 
 SimpleMind - Telegram-бот, который объясняет непонятные слова, термины и темы простыми словами.
 
-Бот использует `aiogram 3` для работы с Telegram и OpenAI API для генерации объяснений. В проекте уже есть режимы объяснения, inline-кнопки, Docker-запуск, GitHub Actions и настраиваемое логирование.
+Бот использует `aiogram 3` для работы с Telegram и Qwen через OpenRouter API для генерации объяснений. В проекте есть режимы объяснения, inline-кнопки, Docker-запуск, GitHub Actions и настраиваемое логирование.
 
 ## Возможности
 
 * Команда `/start` с кратким описанием бота.
 * Команда `/help` с примерами запросов.
 * Обработка обычных текстовых сообщений.
-* AI-объяснения через OpenAI API.
+* AI-объяснения через Qwen-модель в OpenRouter.
 * Режимы объяснения:
   * как новичку
   * коротко
@@ -49,10 +49,26 @@ README.md
 
 ## Что нужно для запуска
 
-* Python 3.11+
+* Python 3.11 или 3.12
 * Telegram bot token от [@BotFather](https://t.me/BotFather)
-* OpenAI API key
+* OpenRouter API key
 * Docker и Docker Compose, если нужен запуск в контейнере
+
+## OpenRouter API Key
+
+1. Открой [OpenRouter](https://openrouter.ai/).
+2. Зарегистрируйся или войди в аккаунт.
+3. Открой раздел API Keys.
+4. Создай новый ключ.
+5. Скопируй ключ в `.env` в переменную `OPENROUTER_API_KEY`.
+
+По умолчанию проект использует бесплатную Qwen-модель:
+
+```env
+OPENROUTER_MODEL=qwen/qwen3-8b:free
+```
+
+Если эта модель недоступна или OpenRouter изменит лимиты, можно заменить значение `OPENROUTER_MODEL` на другую Qwen-модель из каталога OpenRouter.
 
 ## Переменные окружения
 
@@ -72,16 +88,16 @@ cp .env.example .env
 
 ```env
 BOT_TOKEN=your_telegram_bot_token_here
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_MODEL=gpt-4o-mini
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+OPENROUTER_MODEL=qwen/qwen3-8b:free
 LOG_LEVEL=INFO
 ```
 
 Что означает каждая переменная:
 
 * `BOT_TOKEN` - токен Telegram-бота от BotFather.
-* `OPENAI_API_KEY` - ключ OpenAI API.
-* `OPENAI_MODEL` - модель, которая будет генерировать объяснения.
+* `OPENROUTER_API_KEY` - ключ OpenRouter API.
+* `OPENROUTER_MODEL` - Qwen-модель, которая будет генерировать объяснения.
 * `LOG_LEVEL` - уровень логирования. Обычно достаточно `INFO`.
 
 Файл `.env` нельзя коммитить в git.
@@ -277,7 +293,7 @@ GitHub Actions запускает эту проверку для Pull Request в
 
 * Проверь, что файл `.env` существует.
 * Проверь, что `BOT_TOKEN` указан правильно.
-* Проверь, что `OPENAI_API_KEY` указан правильно.
+* Проверь, что `OPENROUTER_API_KEY` указан правильно.
 * Посмотри логи через `docker compose logs -f bot` или в терминале при локальном запуске.
 
 Если команда `docker` не найдена:
@@ -287,6 +303,7 @@ GitHub Actions запускает эту проверку для Pull Request в
 
 Если AI-ответ не приходит:
 
-* Проверь, что OpenAI API key активен.
-* Проверь, что модель из `OPENAI_MODEL` доступна для аккаунта.
+* Проверь, что OpenRouter API key активен.
+* Проверь, что модель из `OPENROUTER_MODEL` доступна в OpenRouter.
+* Проверь лимиты выбранной бесплатной модели.
 * Попробуй повторить запрос позже, если API временно недоступен.
