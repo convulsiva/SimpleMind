@@ -65,10 +65,10 @@ README.md
 По умолчанию проект использует модель:
 
 ```env
-GEMINI_MODEL=gemini-2.0-flash
+GEMINI_MODEL=gemini-2.0-flash-lite
 ```
 
-Для простого бота-объяснялки это хороший быстрый вариант. Если захочешь модель новее, можно попробовать `gemini-2.5-flash`, но у бесплатного тарифа могут быть другие лимиты.
+Для простого бота-объяснялки это быстрый вариант с более удобными бесплатными лимитами. Если захочешь модель сильнее, можно попробовать `gemini-2.0-flash` или `gemini-2.5-flash`, но у них могут быть более жесткие лимиты.
 
 ## Переменные окружения
 
@@ -89,7 +89,7 @@ cp .env.example .env
 ```env
 BOT_TOKEN=your_telegram_bot_token_here
 GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-2.0-flash
+GEMINI_MODEL=gemini-2.0-flash-lite
 LOG_LEVEL=INFO
 ```
 

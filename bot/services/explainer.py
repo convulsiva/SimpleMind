@@ -34,6 +34,8 @@ ACTION_INSTRUCTIONS = {
     ),
 }
 
+FALLBACK_GEMINI_MODEL = "gemini-2.0-flash-lite"
+
 
 class AIServiceError(Exception):
     """Raised when the explanation service cannot return a useful answer."""
@@ -83,12 +85,33 @@ async def explain_term(
     }
 
     try:
-        response_data = await _send_gemini_request(settings, payload)
+        response_data = await _send_gemini_request(
+            settings=settings,
+            payload=payload,
+            model=settings.gemini_model,
+        )
     except httpx.TimeoutException as error:
         logger.warning("Gemini API request timed out")
         raise AIServiceError("Gemini не успел ответить. Попробуй еще раз чуть позже.") from error
     except httpx.HTTPStatusError as error:
         if error.response.status_code == 429:
+            if settings.gemini_model != FALLBACK_GEMINI_MODEL:
+                logger.warning(
+                    "Gemini API rate limit exceeded for model=%s, trying fallback=%s",
+                    settings.gemini_model,
+                    FALLBACK_GEMINI_MODEL,
+                )
+                try:
+                    response_data = await _send_gemini_request(
+                        settings=settings,
+                        payload=payload,
+                        model=FALLBACK_GEMINI_MODEL,
+                    )
+                except httpx.HTTPStatusError:
+                    logger.warning("Gemini fallback model also failed with HTTP error")
+                else:
+                    return _finish_explanation(response_data)
+
             retry_after = error.response.headers.get("Retry-After")
             wait_text = f" Подожди примерно {retry_after} сек. и попробуй снова." if retry_after else ""
             logger.warning("Gemini API rate limit exceeded")
@@ -120,20 +143,16 @@ async def explain_term(
             "Не получилось подключиться к Gemini API. Попробуй еще раз чуть позже."
         ) from error
 
-    explanation = _extract_message_content(response_data)
-    if not explanation:
-        logger.warning("Gemini API returned an empty explanation")
-        raise AIServiceError("Gemini вернул пустой ответ. Попробуй переформулировать запрос.")
-
-    return explanation.strip()
+    return _finish_explanation(response_data)
 
 
 async def _send_gemini_request(
     settings: Settings,
     payload: dict[str, Any],
+    model: str,
 ) -> dict[str, Any]:
     base_url = settings.gemini_base_url.rstrip("/")
-    url = f"{base_url}/models/{settings.gemini_model}:generateContent"
+    url = f"{base_url}/models/{model}:generateContent"
     headers = {
         "Content-Type": "application/json",
         "x-goog-api-key": settings.gemini_api_key,
@@ -143,6 +162,15 @@ async def _send_gemini_request(
         response = await client.post(url, headers=headers, json=payload)
         response.raise_for_status()
         return response.json()
+
+
+def _finish_explanation(response_data: dict[str, Any]) -> str:
+    explanation = _extract_message_content(response_data)
+    if not explanation:
+        logger.warning("Gemini API returned an empty explanation")
+        raise AIServiceError("Gemini вернул пустой ответ. Попробуй переформулировать запрос.")
+
+    return explanation.strip()
 
 
 def _extract_message_content(response_data: dict[str, Any]) -> str | None:
