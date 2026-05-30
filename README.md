@@ -2,14 +2,14 @@
 
 SimpleMind - Telegram-бот, который объясняет непонятные слова, термины и темы простыми словами.
 
-Бот использует `aiogram 3` для работы с Telegram и OpenAI API для генерации объяснений. В проекте уже есть режимы объяснения, inline-кнопки, Docker-запуск, GitHub Actions и настраиваемое логирование.
+Бот использует `aiogram 3` для работы с Telegram и Gemini API для генерации объяснений. В проекте есть режимы объяснения, inline-кнопки, Docker-запуск, GitHub Actions и настраиваемое логирование.
 
 ## Возможности
 
 * Команда `/start` с кратким описанием бота.
 * Команда `/help` с примерами запросов.
 * Обработка обычных текстовых сообщений.
-* AI-объяснения через OpenAI API.
+* AI-объяснения через Gemini API.
 * Режимы объяснения:
   * как новичку
   * коротко
@@ -49,10 +49,26 @@ README.md
 
 ## Что нужно для запуска
 
-* Python 3.11+
+* Python 3.11 или 3.12
 * Telegram bot token от [@BotFather](https://t.me/BotFather)
-* OpenAI API key
+* Gemini API key из [Google AI Studio](https://aistudio.google.com/)
 * Docker и Docker Compose, если нужен запуск в контейнере
+
+## Gemini API Key
+
+1. Открой [Google AI Studio](https://aistudio.google.com/).
+2. Войди в Google-аккаунт.
+3. Нажми `Get API key` или открой раздел API keys.
+4. Создай новый API key.
+5. Скопируй ключ в `.env` в переменную `GEMINI_API_KEY`.
+
+По умолчанию проект использует модель:
+
+```env
+GEMINI_MODEL=gemini-2.0-flash-lite
+```
+
+Для простого бота-объяснялки это быстрый вариант с более удобными бесплатными лимитами. Если захочешь модель сильнее, можно попробовать `gemini-2.0-flash` или `gemini-2.5-flash`, но у них могут быть более жесткие лимиты.
 
 ## Переменные окружения
 
@@ -72,16 +88,16 @@ cp .env.example .env
 
 ```env
 BOT_TOKEN=your_telegram_bot_token_here
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_MODEL=gpt-4o-mini
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.0-flash-lite
 LOG_LEVEL=INFO
 ```
 
 Что означает каждая переменная:
 
 * `BOT_TOKEN` - токен Telegram-бота от BotFather.
-* `OPENAI_API_KEY` - ключ OpenAI API.
-* `OPENAI_MODEL` - модель, которая будет генерировать объяснения.
+* `GEMINI_API_KEY` - ключ Gemini API из Google AI Studio.
+* `GEMINI_MODEL` - модель Gemini, которая будет генерировать объяснения.
 * `LOG_LEVEL` - уровень логирования. Обычно достаточно `INFO`.
 
 Файл `.env` нельзя коммитить в git.
@@ -277,7 +293,7 @@ GitHub Actions запускает эту проверку для Pull Request в
 
 * Проверь, что файл `.env` существует.
 * Проверь, что `BOT_TOKEN` указан правильно.
-* Проверь, что `OPENAI_API_KEY` указан правильно.
+* Проверь, что `GEMINI_API_KEY` указан правильно.
 * Посмотри логи через `docker compose logs -f bot` или в терминале при локальном запуске.
 
 Если команда `docker` не найдена:
@@ -287,6 +303,9 @@ GitHub Actions запускает эту проверку для Pull Request в
 
 Если AI-ответ не приходит:
 
-* Проверь, что OpenAI API key активен.
-* Проверь, что модель из `OPENAI_MODEL` доступна для аккаунта.
+* Проверь, что Gemini API key активен.
+* Проверь, что модель из `GEMINI_MODEL` доступна для аккаунта.
+* Если Gemini возвращает `429 Too Many Requests`, подожди несколько минут: бесплатный тариф ограничен по частоте и дневной квоте.
+* Если Gemini возвращает `401` или `403`, проверь API key и доступ к модели.
+* Если Gemini возвращает `404`, проверь название модели в `GEMINI_MODEL`.
 * Попробуй повторить запрос позже, если API временно недоступен.
