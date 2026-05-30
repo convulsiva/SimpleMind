@@ -65,7 +65,7 @@ README.md
 По умолчанию проект использует бесплатную Qwen-модель:
 
 ```env
-OPENROUTER_MODEL=qwen/qwen3-8b:free
+OPENROUTER_MODEL=qwen/qwen3-next-80b-a3b-instruct:free
 ```
 
 Если эта модель недоступна или OpenRouter изменит лимиты, можно заменить значение `OPENROUTER_MODEL` на другую Qwen-модель из каталога OpenRouter.
@@ -89,7 +89,7 @@ cp .env.example .env
 ```env
 BOT_TOKEN=your_telegram_bot_token_here
 OPENROUTER_API_KEY=your_openrouter_api_key_here
-OPENROUTER_MODEL=qwen/qwen3-8b:free
+OPENROUTER_MODEL=qwen/qwen3-next-80b-a3b-instruct:free
 LOG_LEVEL=INFO
 ```
 
