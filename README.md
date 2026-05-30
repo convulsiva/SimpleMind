@@ -1,42 +1,83 @@
 # SimpleMind
 
-ExplainIt is a Telegram bot powered by AI that helps users understand complex terms, concepts, and topics in simple language.
+SimpleMind is a Telegram bot that explains unfamiliar words, terms, and topics in simple language.
 
-The bot allows users to send any word, phrase, or question and receive a clear, beginner-friendly explanation. It is designed to make learning easier by transforming difficult concepts into understandable and practical explanations.
+At the first stage, the bot runs on `aiogram 3` and returns a mock explanation. AI integration, explanation modes, inline buttons, Docker deployment, and advanced logging will be added in later stages.
 
 ## Features
 
-* Explain technical and non-technical terms
-* Simplify complex concepts
-* Multiple explanation modes (short, detailed, beginner-friendly)
-* Follow-up actions:
+* `/start` command with a short bot introduction
+* `/help` command with example requests
+* Plain text message handling
+* Temporary mock response instead of a real AI API call
+* Environment-based configuration through `.env`
 
-  * Explain more simply
-  * Give an example
-  * Make it shorter
-  * Create a quiz question
-* AI-powered responses
-* Telegram-based interface
-* Docker-ready deployment
-* VPS-friendly architecture
+## Project Structure
+
+```text
+bot/
+  handlers/
+    commands.py
+    messages.py
+  keyboards/
+  services/
+    explainer.py
+  config.py
+  main.py
+```
+
+## Requirements
+
+* Python 3.11+
+* Telegram bot token from [@BotFather](https://t.me/BotFather)
+
+## Local Setup
+
+Create and activate a virtual environment:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Create `.env` from the example file:
+
+```bash
+copy .env.example .env
+```
+
+Set your Telegram token in `.env`:
+
+```env
+BOT_TOKEN=your_telegram_bot_token_here
+```
+
+Run the bot:
+
+```bash
+python -m bot.main
+```
 
 ## Example Requests
 
-* What is TCP/IP?
-* Explain Docker like I'm a beginner
-* What is covariance?
-* How does React work?
-* What is an API?
+* `TCP/IP`
+* `ковариация`
+* `уравнение Матье`
+* `Docker`
+* `что такое API`
+* `React hooks`
 
-## Tech Stack
+## Roadmap
 
-* Python
-* Aiogram 3
-* OpenAI API
-* SQLite
-* Docker
-* GitHub Actions
-
-## Project Goal
-
-The goal of this project is to create a simple and accessible educational assistant that helps users quickly understand unfamiliar terms, technologies, and academic concepts without reading lengthy articles or documentation.
+* Add AI explanation service
+* Add explanation modes
+* Add inline action buttons
+* Add Docker deployment
+* Add structured logging
+* Add GitHub workflow

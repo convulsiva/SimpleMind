@@ -1,0 +1,1 @@
+"""SimpleMind Telegram bot package."""
