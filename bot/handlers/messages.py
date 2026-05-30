@@ -1,3 +1,5 @@
+import logging
+
 from aiogram import F, Router
 from aiogram.types import Message
 
@@ -8,6 +10,7 @@ from bot.services.user_context import save_user_term
 
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 
 @router.message(F.text)
@@ -20,12 +23,14 @@ async def handle_text(message: Message) -> None:
 
     user_id = message.from_user.id if message.from_user else message.chat.id
     save_user_term(user_id, term)
+    logger.info("Received explanation request from user_id=%s", user_id)
 
     processing_message = await message.answer("Думаю над объяснением...")
 
     try:
         explanation = await explain_term(term, get_settings())
     except AIServiceError as error:
+        logger.warning("AI explanation failed for user_id=%s: %s", user_id, error)
         await processing_message.edit_text(str(error))
         return
 

@@ -1,6 +1,11 @@
+import logging
+
 from openai import APIError, AsyncOpenAI
 
 from bot.config import Settings
+
+
+logger = logging.getLogger(__name__)
 
 ExplanationMode = str
 ExplanationAction = str
@@ -71,12 +76,14 @@ async def explain_term(
             temperature=0.4,
         )
     except APIError as error:
+        logger.exception("OpenAI API request failed: %s", error.__class__.__name__)
         raise AIServiceError(
             "Не получилось получить ответ от AI API. Попробуй еще раз чуть позже."
         ) from error
 
     explanation = response.choices[0].message.content
     if not explanation:
+        logger.warning("OpenAI API returned an empty explanation")
         raise AIServiceError("AI API вернул пустой ответ. Попробуй переформулировать запрос.")
 
     return explanation.strip()

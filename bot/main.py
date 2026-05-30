@@ -5,12 +5,17 @@ from aiogram import Bot, Dispatcher
 
 from bot.config import get_settings
 from bot.handlers import callbacks, commands, messages
+from bot.logging_config import setup_logging
+
+
+logger = logging.getLogger(__name__)
 
 
 async def main() -> None:
-    logging.basicConfig(level=logging.INFO)
-
     settings = get_settings()
+    setup_logging(settings.log_level)
+    logger.info("Starting SimpleMind bot")
+
     bot = Bot(token=settings.bot_token)
     dispatcher = Dispatcher()
 
