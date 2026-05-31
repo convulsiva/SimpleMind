@@ -5,10 +5,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     bot_token: str
-    gemini_api_key: str | None = None
-    gemini_model: str = "gemini-2.0-flash-lite"
-    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
-    gemini_timeout: float = 30.0
+    groq_api_key: str | None = None
+    groq_model: str = "llama-3.1-8b-instant"
+    groq_base_url: str = "https://api.groq.com/openai/v1"
+    groq_timeout: float = 30.0
     log_level: str = "INFO"
 
     model_config = SettingsConfigDict(
