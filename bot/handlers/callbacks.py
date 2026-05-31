@@ -10,6 +10,7 @@ from bot.keyboards.explanation import (
     explanation_actions_keyboard,
 )
 from bot.services.explainer import AIServiceError, explain_term
+from bot.services.telegram_formatting import to_telegram_html
 from bot.services.user_context import get_user_term
 
 
@@ -69,4 +70,8 @@ async def _send_or_edit(
         return
 
     reply_markup = explanation_actions_keyboard() if with_keyboard else None
-    await message.answer(text, reply_markup=reply_markup)
+    await message.answer(
+        to_telegram_html(text),
+        parse_mode="HTML",
+        reply_markup=reply_markup,
+    )
