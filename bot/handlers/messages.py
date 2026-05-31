@@ -6,6 +6,7 @@ from aiogram.types import Message
 from bot.config import get_settings
 from bot.keyboards.explanation import explanation_actions_keyboard
 from bot.services.explainer import AIServiceError, explain_term
+from bot.services.telegram_formatting import to_telegram_html
 from bot.services.user_context import save_user_term
 
 
@@ -35,4 +36,8 @@ async def handle_text(message: Message) -> None:
         return
 
     await processing_message.delete()
-    await message.answer(explanation, reply_markup=explanation_actions_keyboard())
+    await message.answer(
+        to_telegram_html(explanation),
+        parse_mode="HTML",
+        reply_markup=explanation_actions_keyboard(),
+    )
