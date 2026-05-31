@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Any
 
 import httpx
@@ -59,7 +60,8 @@ async def explain_term(
                 "content": (
                     "Ты объясняешь сложные слова, термины и темы простым языком. "
                     "Отвечай по-русски, дружелюбно и понятно для новичка. "
-                    "Не используй длинные вступления."
+                    "Не используй длинные вступления. Не показывай ход рассуждений, "
+                    "служебные заметки и блоки <think>."
                 ),
             },
             {
@@ -119,7 +121,12 @@ async def explain_term(
         logger.warning("Groq API returned an empty explanation")
         raise AIServiceError("Groq вернул пустой ответ. Попробуй переформулировать запрос.")
 
-    return explanation.strip()
+    cleaned_explanation = _clean_model_response(explanation)
+    if not cleaned_explanation:
+        logger.warning("Groq API returned only hidden reasoning")
+        raise AIServiceError("Groq вернул пустой ответ. Попробуй переформулировать запрос.")
+
+    return cleaned_explanation
 
 
 async def _send_groq_request(
@@ -153,6 +160,12 @@ def _extract_message_content(response_data: dict[str, Any]) -> str | None:
 
     content = message.get("content")
     return content if isinstance(content, str) else None
+
+
+def _clean_model_response(content: str) -> str:
+    content = re.sub(r"<think>.*?</think>\s*", "", content, flags=re.DOTALL | re.IGNORECASE)
+    content = re.sub(r"</?think>", "", content, flags=re.IGNORECASE)
+    return content.strip()
 
 
 def _extract_error_message(response: httpx.Response) -> str | None:

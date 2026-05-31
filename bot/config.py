@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     bot_token: str
     groq_api_key: str | None = None
-    groq_model: str = "llama-3.1-8b-instant"
+    groq_model: str = "qwen/qwen3-32b"
     groq_base_url: str = "https://api.groq.com/openai/v1"
     groq_timeout: float = 30.0
     log_level: str = "INFO"
