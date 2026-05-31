@@ -2,14 +2,14 @@
 
 SimpleMind - Telegram-бот, который объясняет непонятные слова, термины и темы простыми словами.
 
-Бот использует `aiogram 3` для работы с Telegram и Gemini API для генерации объяснений. В проекте есть режимы объяснения, inline-кнопки, Docker-запуск, GitHub Actions и настраиваемое логирование.
+Бот использует `aiogram 3` для работы с Telegram и Groq API для генерации объяснений. В проекте есть режимы объяснения, inline-кнопки, Docker-запуск, GitHub Actions и настраиваемое логирование.
 
 ## Возможности
 
 * Команда `/start` с кратким описанием бота.
 * Команда `/help` с примерами запросов.
 * Обработка обычных текстовых сообщений.
-* AI-объяснения через Gemini API.
+* AI-объяснения через Groq API.
 * Режимы объяснения:
   * как новичку
   * коротко
@@ -51,24 +51,23 @@ README.md
 
 * Python 3.11 или 3.12
 * Telegram bot token от [@BotFather](https://t.me/BotFather)
-* Gemini API key из [Google AI Studio](https://aistudio.google.com/)
+* Groq API key из [Groq Console](https://console.groq.com/keys)
 * Docker и Docker Compose, если нужен запуск в контейнере
 
-## Gemini API Key
+## Groq API Key
 
-1. Открой [Google AI Studio](https://aistudio.google.com/).
-2. Войди в Google-аккаунт.
-3. Нажми `Get API key` или открой раздел API keys.
-4. Создай новый API key.
-5. Скопируй ключ в `.env` в переменную `GEMINI_API_KEY`.
+1. Открой [Groq Console](https://console.groq.com/keys).
+2. Войди или зарегистрируйся.
+3. Создай новый API key.
+4. Скопируй ключ в `.env` в переменную `GROQ_API_KEY`.
 
 По умолчанию проект использует модель:
 
 ```env
-GEMINI_MODEL=gemini-2.0-flash-lite
+GROQ_MODEL=llama-3.1-8b-instant
 ```
 
-Для простого бота-объяснялки это быстрый вариант с более удобными бесплатными лимитами. Если захочешь модель сильнее, можно попробовать `gemini-2.0-flash` или `gemini-2.5-flash`, но у них могут быть более жесткие лимиты.
+Это быстрый вариант для проверки и простых объяснений. Если модель станет недоступна, выбери актуальную модель из [Groq models](https://console.groq.com/docs/models) и замени `GROQ_MODEL`.
 
 ## Переменные окружения
 
@@ -88,16 +87,16 @@ cp .env.example .env
 
 ```env
 BOT_TOKEN=your_telegram_bot_token_here
-GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-2.0-flash-lite
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=llama-3.1-8b-instant
 LOG_LEVEL=INFO
 ```
 
 Что означает каждая переменная:
 
 * `BOT_TOKEN` - токен Telegram-бота от BotFather.
-* `GEMINI_API_KEY` - ключ Gemini API из Google AI Studio.
-* `GEMINI_MODEL` - модель Gemini, которая будет генерировать объяснения.
+* `GROQ_API_KEY` - ключ Groq API.
+* `GROQ_MODEL` - модель Groq, которая будет генерировать объяснения.
 * `LOG_LEVEL` - уровень логирования. Обычно достаточно `INFO`.
 
 Файл `.env` нельзя коммитить в git.
@@ -275,7 +274,7 @@ git push -u origin feature/example
 
 Pull Request по фичам нужно открывать из `feature/*` в `develop`.
 
-В `main` нужно мержить только стабильную версию через Pull Request из `develop`.
+В `main` нужно мержить только стабильную версию через Pull Request.
 
 ## Проверки
 
@@ -293,7 +292,7 @@ GitHub Actions запускает эту проверку для Pull Request в
 
 * Проверь, что файл `.env` существует.
 * Проверь, что `BOT_TOKEN` указан правильно.
-* Проверь, что `GEMINI_API_KEY` указан правильно.
+* Проверь, что `GROQ_API_KEY` указан правильно.
 * Посмотри логи через `docker compose logs -f bot` или в терминале при локальном запуске.
 
 Если команда `docker` не найдена:
@@ -303,9 +302,9 @@ GitHub Actions запускает эту проверку для Pull Request в
 
 Если AI-ответ не приходит:
 
-* Проверь, что Gemini API key активен.
-* Проверь, что модель из `GEMINI_MODEL` доступна для аккаунта.
-* Если Gemini возвращает `429 Too Many Requests`, подожди несколько минут: бесплатный тариф ограничен по частоте и дневной квоте.
-* Если Gemini возвращает `401` или `403`, проверь API key и доступ к модели.
-* Если Gemini возвращает `404`, проверь название модели в `GEMINI_MODEL`.
+* Проверь, что Groq API key активен.
+* Проверь, что модель из `GROQ_MODEL` доступна для аккаунта.
+* Если Groq возвращает `429 Too Many Requests`, подожди несколько минут: бесплатный тариф ограничен по частоте и дневной квоте.
+* Если Groq возвращает `401` или `403`, проверь API key.
+* Если Groq возвращает `404`, проверь название модели в `GROQ_MODEL`.
 * Попробуй повторить запрос позже, если API временно недоступен.
