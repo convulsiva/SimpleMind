@@ -64,10 +64,10 @@ README.md
 По умолчанию проект использует модель:
 
 ```env
-GROQ_MODEL=llama-3.1-8b-instant
+GROQ_MODEL=qwen/qwen3-32b
 ```
 
-Это быстрый вариант для проверки и простых объяснений. Если модель станет недоступна, выбери актуальную модель из [Groq models](https://console.groq.com/docs/models) и замени `GROQ_MODEL`.
+Это Qwen-модель через Groq для проверки качества объяснений. Если модель станет недоступна или будет отвечать медленнее, выбери актуальную модель из [Groq models](https://console.groq.com/docs/models) и замени `GROQ_MODEL`.
 
 ## Переменные окружения
 
@@ -88,7 +88,7 @@ cp .env.example .env
 ```env
 BOT_TOKEN=your_telegram_bot_token_here
 GROQ_API_KEY=your_groq_api_key_here
-GROQ_MODEL=llama-3.1-8b-instant
+GROQ_MODEL=qwen/qwen3-32b
 LOG_LEVEL=INFO
 ```
 
